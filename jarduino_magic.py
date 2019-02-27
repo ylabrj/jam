@@ -7,6 +7,7 @@ Arduino compile/execute load.
 # These imports required for the functions we run in our magic
 import io
 import os
+import platform
 import subprocess
 import serial
 import serial.tools.list_ports
@@ -17,6 +18,43 @@ from IPython.core import magic_arguments
 from IPython.core.magic import line_magic, cell_magic, line_cell_magic, Magics, magics_class
 
 
+def redefinefile(filename, parms, cell):
+    ''' Writes file from text cell and if parms specified,
+        redefines the values in the sketch #define statements.
+        Parms is a list in the form [['NAME1', 'VALUE1']...['NAMEn','VALUEn]]
+    '''
+    # if no #define parameters to changes, just dump it as is
+    if not parms:
+        with io.open(filename, 'w', encoding='utf-8') as f:
+                f.write(cell)
+    else:
+        # Parameters gotta be parsed into list of values
+        varlist = []
+        for parm in parms:
+            varlist.append(parm[0])
+        # Open the file to write a line at a time
+        f = open(filename,'w', encoding = 'utf-8')
+        # Check every line for a #define with the values we're looking for
+        for line in cell.splitlines():
+            fields = line.split()
+            if len(fields):  # If there's something on the line...
+                if fields[0] =='#define':
+                    if fields[1] in varlist:
+                        index = varlist.index(fields[1])
+                        # Python is clever enough to parse out the field as
+                        # string or int. We force it to string to make the
+                        # rest of the processing simpler
+                        value = str(parms[index][1])
+                        # If it's a string, add the quotes before we rewrite
+                        if not value.isnumeric():
+                            value = "'"+ value + "'"
+                        line = '#define ' + fields[1] +' ' + value
+            f.write(line+'\n')
+        f.close()        
+    
+
+
+
 #######
 # Utility functions
 
@@ -25,11 +63,10 @@ def get_arduino_ports():
     return([p.device for p in serial.tools.list_ports.comports()
                             if 'Arduino' in p.description])
 
-
-
-
 # Create our overall class - JarduinoMagics
 # The class could contain multiple magics.
+# JarduinoMagics will be registered in the Jupyter Ipython kernel at the end
+# of this file. That makes it available in the notebook
  
 @magics_class
 class JarduinoMagics(Magics):
@@ -62,12 +99,19 @@ class JarduinoMagics(Magics):
     #   The directory name
     @magic_arguments.argument('--dir', '-d', 
         help='The directory within sketches to store the file')
-        #   The port
+    #   The port
     @magic_arguments.argument('--port', '-p', 
         help='The serial port connected to the Arduino')
-        #   The directory name
+    #   Redefine constants - allows #define to be used as parameters to
+    #   the compile statement
+        
+    @magic_arguments.argument('--redefine', action='append', nargs = 2,
+                help = '''#define constant to re-define.\n
+                          Example: --redefine FREQUENCY 300\n
+                          Spaces OK but must use double-quotes''')
+    #   The Arduino board type
     @magic_arguments.argument('--board', '-b', 
-        help='Arduino board type')
+        help='Arduino board type (uno, micro, etc.)')
     # Finally, the file name, which has no - or -- identifier.
     @magic_arguments.argument( 'filename', type=str,
         help='file to write')
@@ -88,7 +132,22 @@ class JarduinoMagics(Magics):
         # filename is all alone on the command line with no -x or --identifier
         # that's parsed out by default by the magic arguments parser because
         # we specified it above.
-        filename=args.filename
+        # It it doesn't have .ino, we add it
+        # It is also used (without the .ino, if it was specified) as the
+        # directory to follow the Arduino IDE convention
+        if args.filename:
+            # Split it up to see if it has an extension of .ino
+            filename, ext = os.path.splitext(args.filename)
+            if ext != '.ino':
+                filename = args.filename +'.ino'
+                filedir = args.filename
+            else: # filename has .ino at the end    
+                # directory is the directory without .ino
+                filedir = filename
+                filename = args.filename
+        else:
+            print('Error: Filename required')
+            return
 
         # By default, the Arduino IDE puts each sketch its own directory
         # with the same name as the file. So that's our default as well. 
@@ -98,38 +157,38 @@ class JarduinoMagics(Magics):
         # Because multiple sketches in the same directory
         # get compiled as one big file. That's the Arduino IDE way.
         
-        # Just so our notebook isn't cluttered, we put all the sketch
-        # directories under a subdirectory called "sketches"
-        if not(os.path.isdir("sketches")):
-            print("Creating sketches directory for first time in notebook")
-            os.mkdir("sketches")
+
                               
         # If no directory specified with -d or --dir on the command line,
-        # use the filename as directory name. Same default as Arduino IDE                    
-        if args.dir is None:
-            filedir = filename
-        # otherwise, use the one specified.                      
+        # use the filename as directory name. Same default as Arduino IDE.
+        # If a path is specified, it's relative to the current path
+        if args.dir is None:  #          
+            # Just so our notebook isn't cluttered, we put all the sketch
+            # directories under a subdirectory called "sketches"
+            if not os.path.isdir('sketches'):
+                print('Creating sketches directory for first time in notebook')
+                os.mkdir('sketches')
+            if not os.path.isdir(os.path.join('sketches', filedir)):
+                os.mkdir(os.path.join('sketches', filedir))
+                                 
+            filename = os.path.join(os.getcwd(),'sketches',filedir, filename)
         else:
-            filedir = args.dir
-        # If the directory isn't there, create it.
-        if not(os.path.isdir("sketches/"+filedir)):    
-            print("Creating sketch directory sketches/"+filedir)
-            os.mkdir("sketches/"+filedir)
-            
+            # Is it an absolute path or a relative path?
+            if os.path.isabs(args.dir):
+                filename = os.path.join(args.dir, filename)
+            else:
+                filename =os.path.join(os.getcwd(),args.dir, filename)
 
-        # Get the Arduino ports available
 
-                              
-        # Build the full path and write it out the file
-        #filename = os.getcwd()+"/sketches/"+filedir+"/"+filename+".ino"
-        filename = "sketches\\"+filedir+"\\"+filename+".ino"
+        # Write out the file
+        # The redefinefile() functions handles the #define substitutions
         if os.path.exists(filename):
-            print("Overwriting %s" % filename)
+            print('Overwriting', filename)
         else:
-            print("Writing %s" % filename)
-        mode = 'w' 
-        with io.open(filename, mode, encoding='utf-8') as f:
-            f.write(cell)
+            print('Writing', filename)
+        redefinefile(filename, args.redefine, cell)
+
+                
 
         # Start the string for the Arduino command line options
         # Load to board or just compile and validate?
@@ -141,52 +200,57 @@ class JarduinoMagics(Magics):
             print("Build will upload to board if compile successful")
 
         # Figure out which port to use
-
-
-        arduino_ports = [p.device for p in serial.tools.list_ports.comports()
+    
+        # Windows and Raspberry Pi port checks tell us if it's an Arduino.
+        # Mac doesn't.
+        if platform.system != 'Darwin': # If it's not a Mac...
+            arduino_ports = [p.device for p in serial.tools.list_ports.comports()
                             if 'Arduino' in p.description]
-        # If there are no Arduino ports found, only run if --check option enable 
-        if not(arduino_ports): 
-            if not(args.check):
-                print('No Arduino ports found. Run with -c to check and not upload')
-                exit()
-        # Now figure out which port to use, or, if specified, 
-        else:
-                      
-            if (args.port):
-                if args.port in arduino_ports:
-                    arduino_port = args.port
-                else:
-                    print('Port', args.port, 'not found. Available ports:', arduino_ports)
-                    exit()
+            # If there are no Arduino ports found, only run if --check option enable 
+            if not(arduino_ports): 
+                if not(args.check):
+                    print('No Arduino ports found. Run with -c to check and not upload')
+                    return
+            # Now figure out which port to use, or, if specified, 
             else:
-                arduino_port = arduino_ports[0]
-                if len(arduino_ports) > 1:
-                      print('Warning: Multiple Arduino ports found:', arduino_ports)
-            print('Using arduino port', arduino_port)
-            build_option +=' --port ' + arduino_port
+                # If a port was specied , use it      
+                if (args.port):
+                    if args.port in arduino_ports:
+                        arduino_port = args.port
+                    else:
+                        print('Port', args.port, 'not found. Available ports:', arduino_ports)
+                        return
+                else:
+                    # If not, use the first one found
+                    arduino_port = arduino_ports[0]
+                    if len(arduino_ports) > 1:
+                       print('Warning: Multiple Arduino ports found:', arduino_ports)
+                print('Using arduino port', arduino_port)
+                build_option +=' --port ' + arduino_port
+        else: # ... but if we do have a Mac
+            # If specified, check to see if at least it exists
+            if args.port:
+                serial_ports = [p.device for p in
+                                serial.tools.list_ports.comports()]
+                if args.port in serial_ports:
+                    build_option += '--port ' + args.port
+            else: #No port specified. Hope for the best.
+                print('This is a Mac. No port specified. Hoping default Arduino IDE port works')
 
-      
+        # This triggers the Arduino build's verbose option. It's very verbose.
         if args.verbose:
             build_option += ' --verbose'
-
+            
+        # This is the board type. Because Arduino IDE uses --board.
         if args.board:
             build_option += ' --board arduino:avr:' + args.board    
 
-
-
-
-
-        print("Starting Arduino build")
-        pcmd = '"C:\\Program Files (x86)\\Arduino\\arduino.exe" '+ build_option + ' ' +filename
+        print('Starting Arduino build')
+        pcmd = 'Arduino '+ build_option + ' ' +filename
         print('Command: ', pcmd)
         p = subprocess.Popen(pcmd, stdout=subprocess.PIPE,
                  stderr=subprocess.PIPE, shell=True)
-        #p = subprocess.Popen(["C:/Program Files (x86)/Arduino/arduino.exe "+build_option
-        #          build_option, port_option, filename], stdout=subprocess.PIPE,
-        #         stderr=subprocess.PIPE, shell=True)
  
-
         (output, err) = p.communicate()
  
         # Wait for command to terminate. And dump the output
@@ -223,7 +287,8 @@ class JarduinoMagics(Magics):
 
     @magic_arguments.argument('--ports', '-p', action='store_true',
         help='List available Arduino-connected ports')
-    # Commented out --getprefs and --version because Windows arduino command doesn't support
+    # Commented out --getprefs and --version because optoions don't
+    # work on Windows arduino command
     #@magic_arguments.argument('--getprefs', '-g', action='store_true',
     #    help='Show current default preferences/settings of the Arduino IDE')
     #@magic_arguments.argument('--version', '-v', action='store_true',
@@ -242,42 +307,53 @@ class JarduinoMagics(Magics):
         build_option = ''
         
         if args.ports:
-            print('Arduino ports on system:')
-            print([p.description for p in serial.tools.list_ports.comports()
-                   if 'Arduino' in p.description])
-## Commented out because the options don't work on windows            
+            # On non-MAC systems, a serial port query identifies it as
+            # Arduino connected.
+            if platform.system() != 'Darwin':                
+                print('Arduino ports on system:')
+                print([p.description for p in serial.tools.list_ports.comports()
+                       if 'Arduino' in p.description])
+            else: # If it's a Mac...
+                print('MAC system: Cannot identify Arduino ports. Listing all ports.')
+                print([p.device for p in serial.tools.list_ports.comports()])
+
+                
+
+
+
+
+## Commented out because the options don't work on Windows version of Arduino
+## These are all things from the Arduino command line documentation!!!            
+## If they work on Linux or Mac, we'll handle them. If not, we'll cut it out.
+##            
 ##        if args.getprefs:
 ##            print('Current Arduino IDE preference settings:')
 ##            build_option += ' --get-pref'
 ##        if args.version:
 ##            build_option += ' --version'
+##        if build_option != '':
+##            p = subprocess.Popen(["Arduino",
+##                 build_option], stdout=subprocess.PIPE,
+##                 stderr=subprocess.PIPE, shell=True)
+##
+##            (output, err) = p.communicate()
+## 
+##            # Wait for command to terminate. And dump the output
+##            p_status = p.wait()
+##            print("Command output : ", output.decode('utf-8'))
+##            print("Command errors: ", err.decode('utf-8'))
+
 
         if args.dirlist:
-            adir = 'sketches/'+args.dirlist
+            adir = 'sketches'+ os.file.sep + args.dirlist
             print('Files in', adir,':')
             print(os.listdir(adir))
 
-        if build_option != '':
-            p = subprocess.Popen(["C:/Program Files (x86)/Arduino/arduino.exe",
-                 build_option], stdout=subprocess.PIPE,
-                 stderr=subprocess.PIPE, shell=True)
-
-            (output, err) = p.communicate()
- 
-            # Wait for command to terminate. And dump the output
-            p_status = p.wait()
-            print("Command output : ", output.decode('utf-8'))
-            print("Command errors: ", err.decode('utf-8'))
 
 
         
     #end jardutil ######################################
-
-
-            
-            
-            
-    
+  
 
 # Register the magics in the Ipython kernel
 
