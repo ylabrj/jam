@@ -11,11 +11,113 @@ import platform
 import subprocess
 import serial
 import serial.tools.list_ports
+import numpy
+from pandas import *
 
 # These imports required for the magic function decorators that process
 # command line parameters for us
 from IPython.core import magic_arguments
 from IPython.core.magic import line_magic, cell_magic, line_cell_magic, Magics, magics_class
+
+
+import matplotlib.pyplot as plt
+import serial
+import serial.tools.list_ports 
+
+import argparse
+
+def runexternal(command):
+    p = subprocess.Popen(command)
+
+    
+
+def jardplotstatic(argv=None):
+    ' Argument parser'
+    ap = argparse.ArgumentParser(
+                description = "Start plotter on serial output")
+    ap.add_argument("-p", "--port", default = 'COM3', type = str,
+                help = "serial port for arduino board")
+    ap.add_argument("-g", "--graph", action = 'store_true', 
+                help = "graph serial output")
+    ap.add_argument("-s", "--speed", default = 9600, type = int,
+                help = "Requires -g. Sets serial port speed. Default 9600")
+    ap.add_argument("--points", default = 1000, type = int,
+                help = "number of points to plot")
+    ap.add_argument("--stack", action = 'store_true',
+                help = "Stack instead of overlapping multiple plots")
+    
+    arg=ap.parse_args(argv)
+    print('Plot options received:', argv)
+    print('Points:', arg.points)
+    print('Port:',arg.port)
+
+    arduino_ports = [p.device for p in serial.tools.list_ports.comports()
+                if 'Arduino' in p.description]
+
+    if not arduino_ports:
+        return("Arduino not found")
+    elif len(arduino_ports) > 1:
+        warning("Multiple Arduinos found - using the first")
+
+
+    print("Connecting to port ", arduino_ports[0])
+    port = serial.Serial(arduino_ports[0], arg.speed)   
+
+
+    # Figure out how many entries per line
+    # Read twice, just in case we start mid-line
+    line=port.readline().decode('utf8')
+    line=port.readline().decode('utf8')
+    # get the number of values on the line
+    vals = line.split()
+    num_values = len(vals)
+    # Initialise the array to the size
+    x = []
+
+    for dim in range(num_values):
+        # Create an array for each dimension
+        x.append([float(vals[dim])])
+
+    lines = 0
+
+    while  lines < arg.points:
+        vals=port.readline().decode('utf8').split()
+        floats = []
+        # We need to ensure the values on the line are valid floats.
+    # If not, just throw the line away
+        try:
+            for dim in range(num_values):
+                floats.append(float(vals[dim]))
+        except:
+            break   #Throw it away
+        else:
+            lines +=1
+            for dim in range(num_values):
+                x[dim].append(floats[dim])
+    
+
+    x_axis = list(range(lines+1))
+    for y_ax in x:
+        #ts = Series(y_ax,index=x_axis)
+        ts = Series(y_ax)
+        #ts.plot(kind='bar', figsize=(15,5))
+        ts.plot(figsize=(15,5))
+        if arg.stack:
+            plt.show()
+    if not arg.stack:
+        plt.show()
+    port.close()
+    
+
+
+
+
+
+
+
+
+
+
 
 
 def redefinefile(filename, parms, cell):
@@ -285,18 +387,29 @@ class JarduinoMagics(Magics):
     # The first arguments are flags - enabled or not.
     # 
 
-    @magic_arguments.argument('--ports', '-p', action='store_true',
+    @magic_arguments.argument('--serialports', action='store_true',
         help='List available Arduino-connected ports')
-    # Commented out --getprefs and --version because optoions don't
+    @magic_arguments.argument('--plot', type = int,
+        help='Plot the number of points inside the notebook')
+    @magic_arguments.argument('--stack', action='store_true',
+        help='Stack instead of overlapping the plots')
+    @magic_arguments.argument('--dirlist', '-d', 
+        help='List all arduino sketch files in specified directory under sketches directory')
+    @magic_arguments.argument('--plotext', type = str,
+        help='User external plotter program')
+    @magic_arguments.argument('--speed', '-s', type = str,
+        help='Serial port speed')   
+    @magic_arguments.argument('--port', '-p', type = str,
+        help='The serial port connected to the Arduino')
+    
+  
+    # Commented out --getprefs and --version because options don't
     # work on Windows arduino command
     #@magic_arguments.argument('--getprefs', '-g', action='store_true',
     #    help='Show current default preferences/settings of the Arduino IDE')
     #@magic_arguments.argument('--version', '-v', action='store_true',
     #    help='Show version of the installed Arduino IDE')
     #The next ones provide a parameter value
-    #   List all arduino sketches from the directory
-    @magic_arguments.argument('--dirlist', '-d', 
-        help='List all arduino sketch files in specified directory under sketches directory')
 
     # Now we finally get on to our function
     def jardutil(self, line):
@@ -306,7 +419,7 @@ class JarduinoMagics(Magics):
 
         build_option = ''
         
-        if args.ports:
+        if args.serialports:
             # On non-MAC systems, a serial port query identifies it as
             # Arduino connected.
             if platform.system() != 'Darwin':                
@@ -317,9 +430,22 @@ class JarduinoMagics(Magics):
                 print('MAC system: Cannot identify Arduino ports. Listing all ports.')
                 print([p.device for p in serial.tools.list_ports.comports()])
 
-                
+        if args.plot:
+            plot_options = '--points ' + str(args.plot)
+            if args.port:
+                plot_options += ' --port ' + args.port
+            if args.stack:
+                plot_options += ' --stack'
+            if args.speed:
+                plot_options += ' --speed ' + args.speed
+            
+            #jardplotstatic((plot_options + ' --points ' +str(args.plot)).split())
+            print('Plot options sent:', plot_options)
+            jardplotstatic((plot_options).split())
 
 
+        if args.plotext:
+            runexternal(args.plotext)
 
 
 ## Commented out because the options don't work on Windows version of Arduino
