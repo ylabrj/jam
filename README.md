@@ -21,18 +21,16 @@ A design document with tutorial code and usage examples is provided XXX here XXX
 
 ## Installation
 
-Download or copy file __*arduino_magics.py*__ needs to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located at:
-*  __Windows:__ c:\users\<username\.ipython\profile_default\startup\
-*  __Raspberry Pi:__
-*  __MAC:__
+* The Arduino IDE must be installed on your system. Go to the __*Download the Arduino IDE*__ section of [this page](https://www.arduino.cc/en/Main/Software)
+* Add the directory with the Arduino command (Arduino or Arduino.exe) to your command path.
+* Download or copy file __*arduino_magics.py*__  to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located under your home directory at
+ .ipython\profile_default\startup\
 
-Test and get currentby entering the following in a Python cell:
+Test and get current parameters by entering the following in a Python cell:
 
 > %%jarduino?
 
 > %jardutil?
-
-
 
 ## Magics provided
 
@@ -52,23 +50,25 @@ Optional arguments:
 *  --dir DIR, -d DIR     The directory within sketches to store the file
 *  --port PORT, -p PORT  The serial port connected to the Arduino
 *  --board BOARD, -b B BOARD  Arduino board type
+*  --redefine NAME VALUE  Changes the #define NAME value in the saved file while leaving the cell intact. 
 
 Usage example: the following in a Python cell
 
 ``` %%jarduino mysketch
+#define INCREMENT 10
 void setup(){
     Serial.begin(9600);
-    int x=10;
+    int x = 1;
 }
 void loop(){
-   x=x+1;
+   x=x + INCREMENT;
    Serial.println(x)
 }
 ```
 *  If not there, creates directory *sketches/* in the current directory
 *  If not there, creates directory *sketches/mysketch* in the current directory
 *  Saves everything after the first line into file sketches/mysketch/mysketch.ino. Overwrites the file if it already exists.
-*  If file 
+
 
   
 
@@ -79,5 +79,9 @@ Parameters:
 *  -- ports-p: list ports and connected Arduino board types
 *   --dirlist DIRECTORY, -d  DIRECTORY: ;list all arduino sketch files in specified directory under sketches directory
 
-  
+### MAC Darwin issues
+Linux and Windows operating system informaiton calls identify ports as connected to Arduino devices. The magics use this to identify
+the Arduino ports and/or verify that a selected port is an Arduino port.
+
+Mac Darwin does not provide any similar info, so port checks are not performed. Serial port listing functions simply list all the available serial ports. The magic assumes the IDE will pick up the default port.
 
