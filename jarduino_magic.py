@@ -41,9 +41,9 @@ def getarduinoport(args):
     if platform.system != 'Darwin': # If it's not a Mac...
         arduino_ports = [p.device for p in serial.tools.list_ports.comports()
                         if 'Arduino' in p.description]
-        # If there are no Arduino ports found, only run if --check option enable 
+        # If there are no Arduino ports found, only run if --verify option enable 
         if not(arduino_ports): 
-            if not(args.check):
+            if not(args.verify):
                 print('No Arduino ports found. Run with -c to check and not upload')
                 return(None)
         # Now figure out which port to use, or, if specified, 
@@ -140,7 +140,7 @@ def loadsketch(filename, args):
     # Parse and set all the build options from command line
             # Start the string for the Arduino command line options
     # Load to board or just compile and validate?
-    if args.check:
+    if args.verify:
         build_option = '--verify'
         print("-- check option: Compile only - will not attempt to load to board")                 
     else:
@@ -215,7 +215,7 @@ def expandfilename(sourcefilename, args):
         if os.path.isabs(args.dir):
             filename = os.path.join(args.dir, filename)
         else:
-            filename =os.path.join(os.getcwd(),args.dir, filename)
+            filename =os.path.join(os.getcwd(),'sketches',args.dir, filename)
 
     
     return(filename, filedir)
@@ -283,7 +283,7 @@ class JarduinoMagics(Magics):
     # The first arguments are flags - enabled or not.
     # 
 
-    @magic_arguments.argument('--check', '-c', action='store_true',
+    @magic_arguments.argument('--verify', action='store_true',
         help='Check/compile only. Do not load to Arduino board')
     @magic_arguments.argument('--verbose', '-v', action='store_true',
         help='Enable verbose mode during build/load')
@@ -345,7 +345,7 @@ class JarduinoMagics(Magics):
             print('Writing', filename)
 
 
-        f=open(filename, 'w')
+        f=open(filename, 'w+')
         f.write(cell)
         f.close()
         # Lock'n'load. loadsketch() will also apply any --redefines
@@ -373,7 +373,7 @@ class JarduinoMagics(Magics):
     # We can have as many as we want.
     # The first arguments are flags - enabled or not.
     # 
-    @magic_arguments.argument('--check', '-c', action='store_true',
+    @magic_arguments.argument('--verify', action='store_true',
         help='Check/compile only. Do not load to Arduino board')
     @magic_arguments.argument('--verbose', '-v', action='store_true',
         help='Enable verbose mode during build/load')
