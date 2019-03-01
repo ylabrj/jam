@@ -2,7 +2,7 @@
 Arduino compile/execute load.
 '''
 # Copyright (c) Rene Juneau
-# Distributed under the terms of the Modified BSD License.
+# Distributed under the terms of the GNU General Public License V3.
 
 # These imports required for the functions we run in our magic
 # import io
