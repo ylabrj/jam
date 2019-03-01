@@ -1,11 +1,11 @@
-"""Implementation Jupyter IPython magic functions for
+'''Implementation Jupyter IPython magic functions for
 Arduino compile/execute load.
-"""
+'''
 # Copyright (c) Rene Juneau
 # Distributed under the terms of the Modified BSD License.
 
 # These imports required for the functions we run in our magic
-import io
+# import io
 import os
 import platform
 import subprocess
@@ -27,9 +27,13 @@ import serial.tools.list_ports
 import argparse
 
 def runexternal(command):
+    '''Run an external command. Primarily for calling up external plotters'''
     p = subprocess.Popen(command)
 
 def getarduinoport(args):
+    '''Identifies the Arduino port to write to communicate with the board
+       based on the --port parameter or a search of the system's serial
+       ports'''
 
     # Windows and Raspberry Pi port checks tell us if it's an Arduino.
     # Mac doesn't.
@@ -70,13 +74,9 @@ def getarduinoport(args):
     return(arduino_port)
 
 def jardplotstatic(args):
-##    arduino_ports = [p.device for p in serial.tools.list_ports.comports()
-##                if 'Arduino' in p.description]
-##    if not arduino_ports:
-##        return("Arduino not found")
-##    elif len(arduino_ports) > 1:
-##        warning("Multiple Arduinos found - using the first")
-
+    '''Plots inside a Jupiter cell from the serial port output of the Arduino.
+       A static version of the Arduini IDE serial plotter feature.
+       One plot for each number on each writeln'''
     arduinoport = getarduinoport(args)
     if not arduinoport:
         print('Aborting plotting routine - serial port for data invalid or not specified')
@@ -135,7 +135,7 @@ def jardplotstatic(args):
 def loadsketch(filename, args):
     # Change the #define statement(s) as specified by the parameters
     if args.redefine:
-        redefinefile(filename, args.redefine)
+        redefinefile(filename, args)
 
     # Parse and set all the build options from command line
             # Start the string for the Arduino command line options
@@ -147,51 +147,10 @@ def loadsketch(filename, args):
         build_option = '--upload'   # Full validate/compile/upload
         print("Build will upload to board if compile successful")
 
-    # Figure out which port to use
-    #arduinoport = getarduinoport(args)
-
-##    # Windows and Raspberry Pi port checks tell us if it's an Arduino.
-##    # Mac doesn't.
-##    if platform.system != 'Darwin': # If it's not a Mac...
-##        arduino_ports = [p.device for p in serial.tools.list_ports.comports()
-##                        if 'Arduino' in p.description]
-##        # If there are no Arduino ports found, only run if --check option enable 
-##        if not(arduino_ports): 
-##            if not(args.check):
-##                print('No Arduino ports found. Run with -c to check and not upload')
-##                return
-##        # Now figure out which port to use, or, if specified, 
-##        else:
-##            # If a port was specied , use it      
-##            if (args.port):
-##                if args.port in arduino_ports:
-##                    arduino_port = args.port
-##                else:
-##                    print('Port', args.port, 'not found. Available ports:', arduino_ports)
-##                    return
-##            else:
-##                # If not, use the first one found
-##                arduino_port = arduino_ports[0]
-##                if len(arduino_ports) > 1:
-##                   print('Warning: Multiple Arduino ports found:', arduino_ports)
-##            print('Using arduino port', arduino_port)
-##            build_option +=' --port ' + arduino_port
-##    else: # ... but if we do have a Mac
-##        # If specified, check to see if at least it exists
-##        if args.port:
-##            serial_ports = [p.device for p in
-##                            serial.tools.list_ports.comports()]
-##            if args.port in serial_ports:
-##                build_option += '--port ' + args.port
-##        else: #No port specified. Hope for the best.
-##            print('This is a Mac. No port specified. Hoping default Arduino IDE port works')
-
-
     # Gets the Arduino port
     # Returns null if either no port found or the specified port is unknown
                   
     arduinoport = getarduinoport(args)
-    
     if arduinoport:
         build_option += ' --port ' + arduinoport
     else:
@@ -262,7 +221,7 @@ def expandfilename(sourcefilename, args):
     return(filename, filedir)
 
 def redefinefile(filename, args):
-    ''' Updates #define staements based on  parameters specified,
+    ''' Updates #define statements based on  parameters specified,
         Parms is a list in the form [['NAME1', 'VALUE1']...['NAMEn','VALUEn]]
     '''
     with open(filename) as f:
@@ -290,8 +249,8 @@ def redefinefile(filename, args):
                     # If it's a string, add the quotes before we rewrite
                     if not value.isnumeric():
                         value = "'"+ value + "'"
-                    line = '#define ' + fields[1] +' ' + value
-        f.write(line+'\n')
+                    line = '#define ' + fields[1] +' ' + value + '\n'
+        f.write(line)
     f.close()        
     
 
@@ -384,85 +343,14 @@ class JarduinoMagics(Magics):
             print('Overwriting', filename)
         else:
             print('Writing', filename)
-        with io.open(filename, 'w', encoding='utf-8') as f:
-            f.write(cell)
+
+
+        f=open(filename, 'w')
+        f.write(cell)
+        f.close()
+        # Lock'n'load. loadsketch() will also apply any --redefines
+        loadsketch(filename,args)
             
-        #Update the file's #define statements with any specified on --redefine
-        if args.redefine:
-            redefinefile(filename, args)             
-
-##        # Start the string for the Arduino command line options
-##        # Load to board or just compile and validate?
-##        if args.check:
-##            build_option = '--verify'
-##            print("-- check option: Compile only - will not attempt to load to board")                 
-##        else:
-##            build_option = '--upload'   # Full validate/compile/upload
-##            print("Build will upload to board if compile successful")
-##
-##        # Figure out which port to use
-##    
-##        # Windows and Raspberry Pi port checks tell us if it's an Arduino.
-##        # Mac doesn't.
-##        if platform.system != 'Darwin': # If it's not a Mac...
-##            arduino_ports = [p.device for p in serial.tools.list_ports.comports()
-##                            if 'Arduino' in p.description]
-##            # If there are no Arduino ports found, only run if --check option enable 
-##            if not(arduino_ports): 
-##                if not(args.check):
-##                    print('No Arduino ports found. Run with -c to check and not upload')
-##                    return
-##            # Now figure out which port to use, or, if specified, 
-##            else:
-##                # If a port was specied , use it      
-##                if (args.port):
-##                    if args.port in arduino_ports:
-##                        arduino_port = args.port
-##                    else:
-##                        print('Port', args.port, 'not found. Available ports:', arduino_ports)
-##                        return
-##                else:
-##                    # If not, use the first one found
-##                    arduino_port = arduino_ports[0]
-##                    if len(arduino_ports) > 1:
-##                       print('Warning: Multiple Arduino ports found:', arduino_ports)
-##                print('Using arduino port', arduino_port)
-##                build_option +=' --port ' + arduino_port
-##        else: # ... but if we do have a Mac
-##            # If specified, check to see if at least it exists
-##            if args.port:
-##                serial_ports = [p.device for p in
-##                                serial.tools.list_ports.comports()]
-##                if args.port in serial_ports:
-##                    build_option += '--port ' + args.port
-##            else: #No port specified. Hope for the best.
-##                print('This is a Mac. No port specified. Hoping default Arduino IDE port works')
-##
-##        # This triggers the Arduino build's verbose option. It's very verbose.
-##        if args.verbose:
-##            build_option += ' --verbose'
-##            
-##        # This is the board type. Because Arduino IDE uses --board.
-##        if args.board:
-##            build_option += ' --board arduino:avr:' + args.board    
-
-        print('Starting Arduino build')
-        pcmd = 'Arduino '+ build_option + ' ' +filename
-        print('Command: ', pcmd)
-        p = subprocess.Popen(pcmd, stdout=subprocess.PIPE,
-                 stderr=subprocess.PIPE, shell=True)
- 
-        (output, err) = p.communicate()
- 
-        # Wait for command to terminate. And dump the output
-        p_status = p.wait()
-        print("Command output : ", output.decode('utf-8'))
-        print("Command errors: ", err.decode('utf-8'))
-        # Commented this out because it always gives 0 anyway.
-        # print("Command exit status/return code : ", p_status)
-        print("Done")
-              
-
     # end jarduino ########################################
 
 
@@ -523,7 +411,6 @@ class JarduinoMagics(Magics):
         '''
         args = magic_arguments.parse_argstring(self.jardutil, line)
 
-
         if args.dirlist:
             adir = 'sketches'+ os.file.sep + args.dirlist
             print('Files in', adir,':')
@@ -543,10 +430,8 @@ class JarduinoMagics(Magics):
         if args.sketch:
             (filename, filedir) = expandfilename(args.sketch, args)
             print('Final file name:', filename)
-            #Update the file's #define statements with any specified on --redefine
-            if args.redefine:
-                redefinefile(filename, args)  
-            # Lock'n'load
+
+            # Lock'n'load. loadsketch() will also apply any --redefines
             loadsketch(filename,args)
 
         # If there is a sketch to load, plotting functions must come after the Arduino sketch is loaded
@@ -558,13 +443,6 @@ class JarduinoMagics(Magics):
         # Run the specified external plotting program
         if args.plotext:
             runexternal(args.plotext)
-
-
-
-
-
-
-
 
         
     #end jardutil ######################################
