@@ -135,7 +135,7 @@ __[serialplot](https://hackaday.io/project/5334-serialplot-realtime-plotting-sof
 ## Known issues
 
 So far only tested on Windows 10.
-Thanks to Colin Graza for starting the MAC testing.
+Thanks to Calin Graza for starting the MAC testing.
 
 __--redefine__ works on numbers and strings - but the C/sketch compiler only supports numbers. Duh.
 
