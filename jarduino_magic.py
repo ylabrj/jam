@@ -77,18 +77,28 @@ def jardplotstatic(args):
     '''Plots inside a Jupiter cell from the serial port output of the Arduino.
        A static version of the Arduini IDE serial plotter feature.
        One plot for each number on each writeln'''
+    print('Starting plot of', args.plot, 'points')
     arduinoport = getarduinoport(args)
     if not arduinoport:
         print('Aborting plotting routine - serial port for data invalid or not specified')
         return
-    print("Connecting to port ", arduinoport)
+    if not args.quiet:
+        print('Connecting to port ', arduinoport, 'at speed', args.speed)
     port = serial.Serial(arduinoport, args.speed)   
 
 
     # Figure out how many entries per line
     # Read twice, just in case we start mid-line
-    line=port.readline().decode('utf8')
-    line=port.readline().decode('utf8')
+    try:
+        line=port.readline().decode('utf8')
+    except:
+        # Throw it away. Happens some times at start of read.
+        print('Warning: invalid characters read on first serial line read. Retrying.')
+    try:
+        line=port.readline().decode('utf8')
+    except:
+        print('Error: two line reads failed from serial port. Possible speed mismatch')
+        return
     # get the number of values on the line
     vals = line.split()
     num_values = len(vals)
@@ -119,9 +129,7 @@ def jardplotstatic(args):
 
     x_axis = list(range(lines+1))
     for y_ax in x:
-        #ts = Series(y_ax,index=x_axis)
         ts = Series(y_ax)
-        #ts.plot(kind='bar', figsize=(15,5))
         ts.plot(figsize=(15,5))
         # Stacking means we want a separate plot for each y_ax set.
         # If stack is set, run the plot inside the lop
@@ -145,7 +153,8 @@ def loadsketch(filename, args):
         print("-- check option: Compile only - will not attempt to load to board")                 
     else:
         build_option = '--upload'   # Full validate/compile/upload
-        print("Build will upload to board if compile successful")
+        if not args.quiet:
+            print("Build will upload to board if compile successful")
 
     # Gets the Arduino port
     # Returns null if either no port found or the specified port is unknown
@@ -169,7 +178,8 @@ def loadsketch(filename, args):
     
     print('Starting Arduino build')
     pcmd = 'Arduino '+ build_option + ' ' +filename
-    print('Command: ', pcmd)
+    if not args.quiet:
+        print('Command: ', pcmd)
     p = subprocess.Popen(pcmd, stdout=subprocess.PIPE,
              stderr=subprocess.PIPE, shell=True)
 
@@ -296,6 +306,16 @@ class JarduinoMagics(Magics):
     #   The port
     @magic_arguments.argument('--port', '-p', 
         help='The serial port connected to the Arduino')
+    # To draw a plot from the serious output after the compile and load
+    @magic_arguments.argument('--plot', type = int,
+        help='Plot the number of points inside the notebook')
+    # To set the speed of the serial plot
+    @magic_arguments.argument('--speed', '-s', default = 9600,
+        help='Serial port speed')
+    @magic_arguments.argument('--stack', action='store_true',
+        help='Stack instead of overlapping the plots')
+
+    
     #   Redefine constants - allows #define to be used as parameters to
     #   the compile statement
         
@@ -350,6 +370,10 @@ class JarduinoMagics(Magics):
         f.close()
         # Lock'n'load. loadsketch() will also apply any --redefines
         loadsketch(filename,args)
+
+        # Run plotting to a static internal matplotlib cell
+        if args.plot:
+            jardplotstatic(args)
             
     # end jarduino ########################################
 
@@ -412,7 +436,7 @@ class JarduinoMagics(Magics):
         args = magic_arguments.parse_argstring(self.jardutil, line)
 
         if args.dirlist:
-            adir = 'sketches'+ os.file.sep + args.dirlist
+            adir = 'sketches'+ os.sep + args.dirlist
             print('Files in', adir,':')
             print(os.listdir(adir))
         
@@ -429,7 +453,8 @@ class JarduinoMagics(Magics):
 
         if args.sketch:
             (filename, filedir) = expandfilename(args.sketch, args)
-            print('Final file name:', filename)
+            if not args.quiet:
+                print('Final file name:', filename)
 
             # Lock'n'load. loadsketch() will also apply any --redefines
             loadsketch(filename,args)
