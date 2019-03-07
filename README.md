@@ -2,6 +2,11 @@
 
 *Designed for the Iron Python Kernel*
 
+## *WARNINGS:
+### So far, only tested on Windows 10.
+### Still in development, but good enough that people have been asking me to share it.
+### It things hang, just restart the kernel
+
 Many developers use Arduino boards to generate data to bring into a Jupyter Notebook, but need to compile/load/run their Arduino code from the Arduino IDE.
 
 This code provides Jupyter Notebook magics to allow Arduino C (sketch) code in a Python cell to be compiled and loaded to the Arduino board by making use of the [command line features of the arduino command](https://github.com/arduino/Arduino/blob/master/build/shared/manpage.adoc).
@@ -20,12 +25,16 @@ To keep the notebook tidy, all the sketch directories are kept under directory *
 
 A design document with tutorial code and usage examples will be provided later.
 
+## Tutorial on Jarduino - and on running Arduino sketches without Jarduino.
+
+This tutorial takes you through some usage scenarios. Useful, because it shows you how to use some of the default magics to save and run Arduino code without Jarduino. But hopefully you'll agree that it's better with Jarduino.
+
 ## Installation
 
 * We recommend a full [Anaconda installation](https://www.anaconda.com/distribution/) (not just Jupyter Notebook) because the graphing functions make use of *matplotlib*, *numpy* and *pandas* Python libraries. These are all included with the Anaconda.
 * The Arduino IDE must be installed on your system. Go to the __*Download the Arduino IDE*__ section of [this page](https://www.arduino.cc/en/Main/Software)
 * Add the directory with the Arduino command (Arduino or Arduino.exe) to your command path.
-* Download or copy file __*arduino_magics.py*__  to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located under your home directory at
+* Download or copy file __*jarduino_magics.py*__  to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located under your home directory at
 
  > .ipython/profile_default/startup/
  
@@ -141,6 +150,8 @@ __--redefine__ works on numbers and strings - but the C/sketch compiler only sup
 
 If the underlying program (plotter, Arduino IDE) errors out or there is contention on the serial port, the IPython kernel can be locked up. Restarting the kernel fixes it nicely.
 
+Still working on getting live plotting working.
+
 
 
 ### MAC Darwin issues
@@ -148,4 +159,5 @@ Linux and Windows operating system information calls identify ports as connected
 the Arduino ports and/or verify that a selected port is an Arduino port.
 
 Mac/Darwin does not provide any similar info, so port checks are not performed. Serial port listing functions simply list all the available serial ports. The magic assumes the Arduino IDE will pick up the default port.
+
 
