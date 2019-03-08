@@ -31,13 +31,15 @@ A design document with tutorial code and usage examples will be provided later.
 
 ## Tutorial on Jarduino - and on running Arduino sketches without Jarduino.
 
-This tutorial takes you through some usage scenarios. Useful, because it shows you how to use some of the default magics to save and run Arduino code without Jarduino. But hopefully you'll agree that it's better with Jarduino.
+The [Integrating Arduino and Jupyter tutorial](https://nbviewer.jupyter.org/github/ylabrj/Jarduino/blob/master/Integrating%20Arduino%20and%20Python%20in%20a%20Jupyter%20IPython%20Notebook%20with%20Jarduino.ipynb) in this repository is a Jupyter notebook, so it cannot be viewed directly. The link makes it available through nbviewer.
+
+The tutorial takes you through some usage scenarios and design decisions. Useful, because it shows you how to use some of the default magics to save and run Arduino code without Jarduino. But hopefully you'll agree that it's better with Jarduino.
 
 ## Installation
 
 *  We recommend a full [Anaconda installation](https://www.anaconda.com/distribution/) (not just Jupyter Notebook) because the graphing functions make use of *matplotlib*, *numpy* and *pandas* Python libraries. These are all included with the Anaconda.
 *  The Arduino IDE must be installed on your system. Go to the __*Download the Arduino IDE*__ section of [this page](https://www.arduino.cc/en/Main/Software)
-*  __RASPBERRY PI: DO NOT USE THE RASPBERRY PI ARDUINO PACKAGE DOWNLOAD.__ The Arduino package manager is providing an ancient version of Arduino IDE that does not support command line execution. Instead, download the most recent version from [arduino.cc](https://www.arduino.cc/en/Main/Software).
+*  __RASPBERRY PI: DO NOT USE THE RASPBERRY PI RASPBIAN'S ARDUINO PACKAGE DOWNLOAD.__ The Raspbian package manager is providing an ancient version of Arduino IDE that does not support command line execution. Instead, download the most recent version from [arduino.cc](https://www.arduino.cc/en/Main/Software).
 *  __WINDOWS: Add the directory with the Arduino command (Arduino or Arduino.exe) to your command path.__
 *  Download or copy file __*jarduino_magics.py*__  to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located under your home directory at
 
