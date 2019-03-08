@@ -3,8 +3,9 @@
 *Designed for the Iron Python Kernel*
 
 ## WARNINGS:
-*  So far, only tested on Windows 10.
+*  Tested on Windows 10 and Raspberry Pi 4.14
 *  Still in development, but good enough that people have been asking me to share it.
+*  For MAC and Linux, always specify the serial port with --port option
 *  If things hang, just restart the kernel
 *  __USE *--redefine* with caution.__ It does not back up a file first. There was one glitch I have not been able to reproduce that corrupted a file. I'll be adding a feature to keep the original and restore it.
 
@@ -34,17 +35,18 @@ This tutorial takes you through some usage scenarios. Useful, because it shows y
 
 ## Installation
 
-* We recommend a full [Anaconda installation](https://www.anaconda.com/distribution/) (not just Jupyter Notebook) because the graphing functions make use of *matplotlib*, *numpy* and *pandas* Python libraries. These are all included with the Anaconda.
-* The Arduino IDE must be installed on your system. Go to the __*Download the Arduino IDE*__ section of [this page](https://www.arduino.cc/en/Main/Software)
-* Add the directory with the Arduino command (Arduino or Arduino.exe) to your command path.
-* Download or copy file __*jarduino_magics.py*__  to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located under your home directory at
+*  We recommend a full [Anaconda installation](https://www.anaconda.com/distribution/) (not just Jupyter Notebook) because the graphing functions make use of *matplotlib*, *numpy* and *pandas* Python libraries. These are all included with the Anaconda.
+*  The Arduino IDE must be installed on your system. Go to the __*Download the Arduino IDE*__ section of [this page](https://www.arduino.cc/en/Main/Software)
+*  __RASPBERRY PI: DO NOT USE THE RASPBERRY PI ARDUINO PACKAGE DOWNLOAD.__ The Arduino package manager is providing an ancient version of Arduino IDE that does not support command line execution. Instead, download the most recent version from [arduino.cc](https://www.arduino.cc/en/Main/Software).
+*  __WINDOWS: Add the directory with the Arduino command (Arduino or Arduino.exe) to your command path.__
+*  Download or copy file __*jarduino_magics.py*__  to the user's Jupyter Notebook startup directory. Jupyter will load it at startup, or you can run a kernel restart within your notebook to load it. The startup directory is located under your home directory at
 
  > .ipython/profile_default/startup/
  
  The functions are available through two magics:
  
  *  __%%jarduino__ is a Python cell magic where the rest of the cell is the Arduino code (instead of Python code!)
- * __%jardutil__ is a Python line magic that operates on existing sketch files and provides utility functions and graphing extensions.
+ *  __%jardutil__ is a Python line magic that operates on existing sketch files and provides utility functions and graphing extensions.
 
 Test and get current parameters by entering the following in a Python cell:
 
@@ -139,14 +141,14 @@ We're still working on having live plots inside the notebook.
 
 In the interim, you can specify an external plotter by adding *--plotext <program>*. The external plotter must support the same ASCII number format from the *Serial.println()* output. <program> must be configured in the system path or entered with a fully-qualified path.
  
-The Arduino IDE serialplotter cannot be called up directly from the command line. You can enter *--plotext Arduino* but then you'll need to execute the pulldown menu option and specify the serial port to start it.
+The Arduino IDE serialplotter cannot be called up directly from the command line. You can enter *--plotext Arduino* but then you'll need to execute the pulldown menu option and specify the serial port to start it. __*Caution: Starting the Arduino IDE serial plotter resets the Arduino board.*__
 
 __[serialplot](https://hackaday.io/project/5334-serialplot-realtime-plotting-software)__ is a free option we like that has great performance. You may need to specify the port, and then hit the start button to start plotting.
 
 
 ## Known issues
 
-So far only tested on Windows 10.
+So far only tested on Windows 10 and Raspberry Pi Raspbian 4.14
 Thanks to Calin Graza for starting the MAC testing.
 
 __--redefine__ works on numbers and strings - but the C/sketch compiler only supports numbers. Duh.
@@ -156,11 +158,9 @@ If the underlying program (plotter, Arduino IDE) errors out or there is contenti
 Still working on getting live plotting working.
 
 
+### MAC Darwin, Linux and Raspberry Pi serial port issues.
+The Windows operating system information calls identify ports as connected to Arduino devices directly in the Python serial library calls. The magics use this to identifythe Arduino ports and/or verify that a selected port is an Arduino port.
 
-### MAC Darwin issues
-Linux and Windows operating system information calls identify ports as connected to Arduino devices. The magics use this to identify
-the Arduino ports and/or verify that a selected port is an Arduino port.
-
-Mac/Darwin does not provide any similar info, so port checks are not performed. Serial port listing functions simply list all the available serial ports. The magic assumes the Arduino IDE will pick up the default port.
+Mac/Darwin and Linux do not provide this info to the Python serial library , so port checks are not performed. Serial port listing functions simply list all the available serial ports. The documentation says the IDE will recall the last port used, but we have found this unreliable. Always specify the --port. Also good practice to specify the board type with --board.
 
 
