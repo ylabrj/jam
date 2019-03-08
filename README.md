@@ -2,10 +2,13 @@
 
 *Designed for the Iron Python Kernel*
 
-## *WARNINGS:
-### So far, only tested on Windows 10.
-### Still in development, but good enough that people have been asking me to share it.
-### It things hang, just restart the kernel
+## WARNINGS:
+*  So far, only tested on Windows 10.
+*  Still in development, but good enough that people have been asking me to share it.
+*  If things hang, just restart the kernel
+*  __USE *--redefine* with caution.__ It does not back up a file first. There was one glitch I have not been able to reproduce that corrupted a file. I'll be adding a feature to keep the original and restore it.
+
+## Overview
 
 Many developers use Arduino boards to generate data to bring into a Jupyter Notebook, but need to compile/load/run their Arduino code from the Arduino IDE.
 
