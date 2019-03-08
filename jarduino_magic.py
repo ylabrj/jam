@@ -38,7 +38,7 @@ def getarduinoport(args):
     # Windows and Raspberry Pi port checks tell us if it's an Arduino.
     # Mac doesn't.
     arduino_port = None
-    if platform.system != 'Darwin': # If it's not a Mac...
+    if platform.system() == 'Windows': # If it's not a Mac...
         arduino_ports = [p.device for p in serial.tools.list_ports.comports()
                         if 'Arduino' in p.description]
         # If there are no Arduino ports found, only run if --verify option enable 
@@ -61,7 +61,7 @@ def getarduinoport(args):
                 if len(arduino_ports) > 1:
                    print('Warning: Multiple Arduino ports found:', arduino_ports)
 
-    else: # ... but if we do have a Mac
+    else: # ... but if we do have a Mac or Linux
         # If specified, check to see if at least it exists
         if args.port:
             serial_ports = [p.device for p in
@@ -177,7 +177,14 @@ def loadsketch(filename, args):
 
     
     print('Starting Arduino build')
-    pcmd = 'Arduino '+ build_option + ' ' +filename
+    system_type = platform.system()
+    if system_type == 'Windows':
+        ard_command = 'arduino_debug'
+    elif system_type == 'Darwin':
+        ard_command = 'Arduino'
+    else:
+        ard_command = 'arduino'
+    pcmd = ard_command + ' ' + build_option + ' ' +filename
     if not args.quiet:
         print('Command: ', pcmd)
     p = subprocess.Popen(pcmd, stdout=subprocess.PIPE,
@@ -443,12 +450,13 @@ class JarduinoMagics(Magics):
         if args.serialports:
             # On non-MAC systems, a serial port query identifies it as
             # Arduino connected.
-            if platform.system() != 'Darwin':                
+            if platform.system() == 'Windows':                
                 print('Arduino ports on system:')
                 print([p.description for p in serial.tools.list_ports.comports()
                        if 'Arduino' in p.description])
-            else: # If it's a Mac...
-                print('MAC system: Cannot identify Arduino ports. Listing all ports.')
+            else: # If it's a Mac or Linux
+                print('MAC and Linux system: Cannot identify Arduino ports. Listing all ports.')
+                print('Linux is usually /dev/ttyACMxx')
                 print([p.device for p in serial.tools.list_ports.comports()])
 
         if args.sketch:
