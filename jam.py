@@ -265,8 +265,8 @@ def redefinefile(filename, args):
                     # rest of the processing simpler
                     value = str(parms[index][1])
                     # If it's a string, add the quotes before we rewrite
-                    if not value.isnumeric():
-                        value = "'"+ value + "'"
+                    #if not value.isnumeric():
+                    #    value = "'"+ value + "'"
                     line = '#define ' + fields[1] +' ' + value + '\n'
         f.write(line)
     f.close()        
