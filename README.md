@@ -49,12 +49,12 @@ The tutorial takes you through some usage scenarios and design decisions. Useful
  
  The functions are available through two magics:
  
- *  __%%jamcellcell__ is a Python cell magic where the rest of the cell is the Arduino code (instead of Python code!)
+ *  __%%jamcell__ is a Python cell magic where the rest of the cell is the Arduino code (instead of Python code!)
  *  __%jam__ is a Python line magic that operates on existing sketch files and provides utility functions and graphing extensions.
 
 Test and get current parameters by entering the following in a Python cell:
 
-> %%jamcellcell?
+> %%jamcell?
 
 > %jam?
 
