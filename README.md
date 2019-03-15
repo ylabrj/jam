@@ -33,7 +33,7 @@ A design document with tutorial code and usage examples will be provided later.
 
 ## Tutorial on jam - and on running Arduino sketches without jam.
 
-The [Integrating Arduino and Jupyter tutorial](https://nbviewer.jupyter.org/github/ylabrj/jam/blob/master/Integrating%20Arduino%20and%20Python%20in%20a%20Jupyter%20IPython%20Notebook%20with%20jam.ipynb) in this repository is a Jupyter notebook, so it cannot be viewed directly. The link makes it available through nbviewer.
+The [Integrating Arduino and Jupyter tutorial](https://nbviewer.jupyter.org/github/ylabrj/jam/blob/master/Integrating%20Arduino%20and%20Python%20in%20a%20Jupyter%20IPython%20Notebook%20with%20jam.ipynb) in this repository is a Jupyter notebook, so it cannot be viewed directly. The [link](https://nbviewer.jupyter.org/github/ylabrj/jam/blob/master/Integrating%20Arduino%20and%20Python%20in%20a%20Jupyter%20IPython%20Notebook%20with%20jam.ipynb) makes it available through nbviewer.
 
 The tutorial takes you through some usage scenarios and design decisions. Useful, because it shows you how to use some of the default magics to save and run Arduino code without jam. But hopefully you'll agree that it's better with jam.
 
