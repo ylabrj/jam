@@ -1,6 +1,6 @@
 # jam - Jupyter Notebook and Arduino Mash-Up using cell magics
 
-### *Formerly jorduino until I found out the java people already used that name
+### Formerly jarduino until I found out the java people already used that name
 
 *Designed for the Iron Python Kernel*
 
