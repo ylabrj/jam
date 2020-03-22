@@ -4,6 +4,11 @@
 
 *Designed for the Iron Python Kernel*
 
+## DEVELOPMENT NOTE 2020-03-22
+
+* Original version of jam used the arduino_debug command to run the compile/load cycle. In the lastest releases, that command now vomits up debug messages like a mega cruise ship spits out passengers on a small island. We are working to update the code to use the (relatively) new arduino-cli command that is specifically designed for this purpose.*
+
+
 ## WARNINGS:
 *  Tested on Windows 10 and Raspberry Pi 4.14
 *  Still in development, but good enough that people have been asking me to share it.
